@@ -1,12 +1,18 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from googlenewsdecoder import gnewsdecoder
+from typing import List
 import time
 
 app = FastAPI()
 
+# Rota simples para testar no navegador se a API está viva
+@app.get("/")
+def home():
+    return {"status": "ok", "message": "API operacional"}
+
 class BatchLinkRequest(BaseModel):
-    urls: list[str]
+    urls: List[str]
 
 @app.post("/decode-batch")
 def decode_batch(request: BatchLinkRequest):
