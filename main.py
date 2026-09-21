@@ -1,22 +1,31 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from googlenewsdecoder import gnewsdecoder
+import time
 
 app = FastAPI()
 
-# Estrutura do dado que vamos receber da planilha
-class LinkRequest(BaseModel):
-    url: str
+class BatchLinkRequest(BaseModel):
+    urls: list[str]
 
-@app.post("/decode")
-def decode_link(request: LinkRequest):
-    try:
-        # Usa a sua biblioteca para decodificar
-        resultado = gnewsdecoder(request.url, interval=1)
+@app.post("/decode-batch")
+def decode_batch(request: BatchLinkRequest):
+    results = []
+    for url in request.urls:
+        if not url or url.strip() == "":
+            results.append("")
+            continue
+            
+        url_limpa = url.replace("'", "").replace('"', '').strip()
+        try:
+            res = gnewsdecoder(url_limpa, interval=1)
+            if res.get("status"):
+                results.append(res["decoded_url"])
+            else:
+                results.append(f"Erro: {res.get('message')}")
+        except Exception as e:
+            results.append(f"Erro: {str(e)}")
+            
+        time.sleep(0.5)
         
-        if resultado.get("status"):
-            return {"success": True, "decoded_url": resultado["decoded_url"]}
-        else:
-            return {"success": False, "error": resultado.get("message")}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+    return {"success": True, "decoded_urls": results}
